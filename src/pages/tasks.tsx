@@ -28,6 +28,9 @@ const TaskManager = () => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const tasksPerPage = 5;
+
   const isEditing = !!editingTask;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -47,14 +50,11 @@ const TaskManager = () => {
       if (!response.ok) throw new Error("Failed to fetch tasks.");
   
       const result = await response.json();
-      console.log("Fetched tasks:", result);
       setTasks(result.tasks); 
     } catch (error: any) {
       setError(error.message);
     }
   };
-  
-  
 
   useEffect(() => {
     fetchTasks();
@@ -95,13 +95,9 @@ const TaskManager = () => {
       if (isEditing) {
         setTasks((prev) => prev.map((t) => (t.id === editingTask.id ? result : t)));
       } else {
-        setTasks((prev) => {
-          // Ensure prev is always an array before spreading
-          return Array.isArray(prev) ? [...prev, result] : [result];
-        });
+        setTasks((prev) => [...prev, result]);
       }
 
-   
       setTaskData({ title: "", description: "", priority: "Medium", status: "Pending" });
       setEditingTask(null);
     } catch (error: any) {
@@ -109,7 +105,7 @@ const TaskManager = () => {
     }
   };
 
-  const handleEdit = (task: any) => {
+  const handleEdit = (task: Task) => {
     setEditingTask(task);
     setTaskData({
       title: task.title,
@@ -136,6 +132,17 @@ const TaskManager = () => {
     } catch (error: any) {
       setError(error.message);
     }
+  };
+
+  const currentTasks = tasks.slice(
+    (currentPage - 1) * tasksPerPage,
+    currentPage * tasksPerPage
+  );
+
+  const totalPages = Math.ceil(tasks.length / tasksPerPage);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   return (
@@ -207,32 +214,47 @@ const TaskManager = () => {
           </button>
         )}
       </form>
+
       <div className="space-y-4">
-          {tasks.length > 0 ? (
-            tasks.map((task) => (
-              <div key={task.id} className="p-4 border rounded space-y-2">
-                <h3 className="text-lg font-bold">{task.title}</h3>
-                <p>{task.description}</p>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleEdit(task)}
-                    className="px-4 py-2 text-blue-500 border border-blue-500 rounded hover:bg-blue-500 hover:text-white"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(task.id)}
-                    className="px-4 py-2 text-red-500 border border-red-500 rounded hover:bg-red-500 hover:text-white"
-                  >
-                    Delete
-                  </button>
-                </div>
+        {currentTasks.length > 0 ? (
+          currentTasks.map((task) => (
+            <div key={task.id} className="p-4 border rounded space-y-2">
+              <h3 className="text-lg font-bold">{task.title}</h3>
+              <p>{task.description}</p>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handleEdit(task)}
+                  className="px-4 py-2 text-blue-500 border border-blue-500 rounded hover:bg-blue-500 hover:text-white"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(task.id)}
+                  className="px-4 py-2 text-red-500 border border-red-500 rounded hover:bg-red-500 hover:text-white"
+                >
+                  Delete
+                </button>
               </div>
-            ))
-          ) : (
-            <p>No tasks available. Add a task to get started!</p>
-          )}
-        </div>
+            </div>
+          ))
+        ) : (
+          <p>No tasks available. Add a task to get started!</p>
+        )}
+      </div>
+
+      <div className="flex justify-center space-x-2">
+        {Array.from({ length: totalPages }, (_, index) => (
+          <button
+            key={index + 1}
+            onClick={() => handlePageChange(index + 1)}
+            className={`px-3 py-1 border rounded ${
+              currentPage === index + 1 ? "bg-blue-500 text-white" : "bg-white"
+            }`}
+          >
+            {index + 1}
+          </button>
+        ))}
+      </div>
     </div>
   );
 };
