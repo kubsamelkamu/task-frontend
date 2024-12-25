@@ -149,117 +149,144 @@ const TaskManager = () => {
   };
 
   return (
-    <div className="p-6 space-y-4 bg-gray-100">
-      <h1 className="text-2xl font-bold">Task Manager</h1>
+  <div className="container mx-auto p-4 space-y-6">
+  <h1 className="text-3xl font-bold text-center text-gray-800">Task Manager</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {error && <p className="text-red-500">{error}</p>}
-        {success && <p className="text-green-500">{success}</p>}
+  <form onSubmit={handleSubmit} className="max-w-md mx-auto p-6 bg-white rounded shadow space-y-4">
+    {error && <p className="text-red-500">{error}</p>}
+    {success && <p className="text-green-500">{success}</p>}
 
-        <input
-          type="text"
-          name="title"
-          value={taskData.title}
-          onChange={handleInputChange}
-          placeholder="Task Title"
-          className="w-full px-4 py-2 border rounded"
-          required
-        />
+    <input
+      type="text"
+      name="title"
+      value={taskData.title}
+      onChange={handleInputChange}
+      placeholder="Task Title"
+      className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500"
+      required
+    />
 
-        <textarea
-          name="description"
-          value={taskData.description}
-          onChange={handleInputChange}
-          placeholder="Task Description"
-          className="w-full px-4 py-2 border rounded"
-          required
-        />
+    <textarea
+      name="description"
+      value={taskData.description}
+      onChange={handleInputChange}
+      placeholder="Task Description"
+      className="w-full px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500"
+      required
+    />
 
-        <select
-          name="priority"
-          value={taskData.priority}
-          onChange={handleInputChange}
-          className="w-full px-4 py-2 border rounded"
-        >
-          <option value="High">High</option>
-          <option value="Medium">Medium</option>
-          <option value="Low">Low</option>
-        </select>
+    <div className="flex gap-4">
+      <select
+        name="priority"
+        value={taskData.priority}
+        onChange={handleInputChange}
+        className="w-1/2 px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
 
-        <select
-          name="status"
-          value={taskData.status}
-          onChange={handleInputChange}
-          className="w-full px-4 py-2 border rounded"
-        >
-          <option value="Pending">Pending</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Completed">Completed</option>
-        </select>
-
-        <button
-          type="submit"
-          className="w-full px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
-        >
-          {isEditing ? "Update Task" : "Create Task"}
-        </button>
-
-        {isEditing && (
-          <button
-            type="button"
-            onClick={() => {
-              setEditingTask(null);
-              setTaskData({ title: "", description: "", priority: "Medium", status: "Pending" });
-            }}
-            className="w-full px-4 py-2 mt-2 text-red-500 border border-red-500 rounded hover:bg-red-500 hover:text-white"
-          >
-            Cancel Edit
-          </button>
-        )}
-      </form>
-
-      <div className="space-y-4">
-        {currentTasks.length > 0 ? (
-          currentTasks.map((task) => (
-            <div key={task._id} className="p-4 border rounded space-y-2">
-              <h3 className="text-lg font-bold">{task.title}</h3>
-              <p>{task.description}</p>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleEdit(task)}
-                  className="px-4 py-2 text-blue-500 border border-blue-500 rounded hover:bg-blue-500 hover:text-white"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(task._id)}
-                  className="px-4 py-2 text-red-500 border border-red-500 rounded hover:bg-red-500 hover:text-white"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))
-        ) : (
-          <p>No tasks available. Add a task to get started!</p>
-        )}
-      </div>
-
-      <div className="flex justify-center space-x-2">
-        {Array.from({ length: totalPages }, (_, index) => (
-          <button
-            key={index + 1}
-            onClick={() => handlePageChange(index + 1)}
-            className={`px-3 py-1 border rounded ${
-              currentPage === index + 1 ? "bg-blue-500 text-white" : "bg-white"
-            }`}
-          >
-            {index + 1}
-          </button>
-        ))}
-      </div>
+      <select
+        name="status"
+        value={taskData.status}
+        onChange={handleInputChange}
+        className="w-1/2 px-4 py-2 border rounded focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="Pending">Pending</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Completed">Completed</option>
+      </select>
     </div>
+
+    <button
+      type="submit"
+      className="w-full py-2 text-white bg-blue-500 rounded hover:bg-blue-600 transition duration-200"
+    >
+      {isEditing ? "Update Task" : "Create Task"}
+    </button>
+
+    {isEditing && (
+      <button
+        type="button"
+        onClick={() => {
+          setEditingTask(null);
+          setTaskData({ title: "", description: "", priority: "Medium", status: "Pending" });
+        }}
+        className="w-full py-2 mt-2 text-red-500 border border-red-500 rounded hover:bg-red-500 hover:text-white transition duration-200"
+      >
+        Cancel Edit
+      </button>
+    )}
+  </form>
+
+  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {currentTasks.length > 0 ? (
+      currentTasks.map((task) => (
+        <div key={task._id} className="p-4 bg-white border rounded shadow space-y-2">
+          <h3 className="text-lg font-semibold">{task.title}</h3>
+          <p className="text-sm text-gray-600">{task.description}</p>
+          <div className="flex items-center justify-between">
+            <span
+              className={`px-2 py-1 text-sm rounded ${
+                task.status === "Completed"
+                  ? "bg-green-100 text-green-700"
+                  : task.status === "In Progress"
+                  ? "bg-yellow-100 text-yellow-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+            >
+              {task.status}
+            </span>
+            <span
+              className={`px-2 py-1 text-sm rounded ${
+                task.priority === "High"
+                  ? "bg-red-100 text-red-700"
+                  : task.priority === "Medium"
+                  ? "bg-yellow-100 text-yellow-700"
+                  : "bg-green-100 text-green-700"
+              }`}
+            >
+              {task.priority}
+            </span>
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => handleEdit(task)}
+              className="px-4 py-2 text-blue-500 border border-blue-500 rounded hover:bg-blue-500 hover:text-white transition duration-200"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => handleDelete(task._id)}
+              className="px-4 py-2 text-red-500 border border-red-500 rounded hover:bg-red-500 hover:text-white transition duration-200"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ))
+    ) : (
+      <p className="text-center text-gray-500">No tasks available. Add a task to get started!</p>
+    )}
+  </div>
+
+  <div className="flex justify-center space-x-2">
+    {Array.from({ length: totalPages }, (_, index) => (
+      <button
+        key={index + 1}
+        onClick={() => handlePageChange(index + 1)}
+        className={`px-3 py-1 border rounded ${
+          currentPage === index + 1 ? "bg-blue-500 text-white" : "bg-white"
+        }`}
+      >
+        {index + 1}
+      </button>
+    ))}
+  </div>
+  </div>
   );
+
 };
 
 export default TaskManager;
