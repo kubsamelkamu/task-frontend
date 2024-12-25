@@ -1,21 +1,64 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-const TaskManager: React.FC = () => {
-  const [taskData, setTaskData] = useState({
+interface Task {
+  id: number;
+  title: string;
+  description: string;
+  priority: "High" | "Medium" | "Low";
+  status: "Pending" | "In Progress" | "Completed";
+}
+
+interface TaskData {
+  title: string;
+  description: string;
+  priority: "High" | "Medium" | "Low";
+  status: "Pending" | "In Progress" | "Completed";
+}
+
+const TaskManager = () => {
+  const [tasks, setTasks] = useState<Task[]>([]); 
+  const [taskData, setTaskData] = useState<TaskData>({
     title: "",
     description: "",
     priority: "Medium",
     status: "Pending",
   });
-
+  
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const isEditing = !!editingTask;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setTaskData((prev) => ({ ...prev, [name]: value }));
+    setTaskData({ ...taskData, [name]: value });
   };
+
+  const fetchTasks = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No token found. Please log in again.");
+  
+      const response = await fetch("http://127.0.0.1:5000/api/tasks", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
+      if (!response.ok) throw new Error("Failed to fetch tasks.");
+  
+      const result = await response.json();
+      console.log("Fetched tasks:", result);
+      setTasks(result.tasks); 
+    } catch (error: any) {
+      setError(error.message);
+    }
+  };
+  
+  
+
+  useEffect(() => {
+    fetchTasks();
+  }, []); 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,12 +67,15 @@ const TaskManager: React.FC = () => {
 
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("No token found. Please log in again.");
-      }
+      if (!token) throw new Error("No token found. Please log in again.");
 
-      const response = await fetch("http://127.0.0.1:5000/api/tasks", {
-        method: "POST",
+      const url = isEditing
+        ? `http://127.0.0.1:5000/api/tasks/${editingTask.id}`
+        : "http://127.0.0.1:5000/api/tasks";
+      const method = isEditing ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -39,117 +85,154 @@ const TaskManager: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create task.");
+        throw new Error(errorData.message || "Failed to save task.");
       }
 
       const result = await response.json();
-      console.log(result);
-      setSuccess("Task created successfully!");
-      setTaskData({
-        title: "",
-        description: "",
-        priority: "Medium",
-        status: "Pending",
-      });
+      setSuccess(isEditing ? "Task updated successfully!" : "Task created successfully!");
+
+      // Update tasks list
+      if (isEditing) {
+        setTasks((prev) => prev.map((t) => (t.id === editingTask.id ? result : t)));
+      } else {
+        setTasks((prev) => {
+          // Ensure prev is always an array before spreading
+          return Array.isArray(prev) ? [...prev, result] : [result];
+        });
+      }
+
+   
+      setTaskData({ title: "", description: "", priority: "Medium", status: "Pending" });
+      setEditingTask(null);
     } catch (error: any) {
-      setError(error.message || "An error occurred while creating the task.");
+      setError(error.message || "An error occurred while saving the task.");
+    }
+  };
+
+  const handleEdit = (task: any) => {
+    setEditingTask(task);
+    setTaskData({
+      title: task.title,
+      description: task.description,
+      priority: task.priority,
+      status: task.status,
+    });
+  };
+
+  const handleDelete = async (taskId: number) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No token found. Please log in again.");
+
+      const response = await fetch(`http://127.0.0.1:5000/api/tasks/${taskId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error("Failed to delete task.");
+
+      setTasks((prev) => prev.filter((task) => task.id !== taskId));
+      setSuccess("Task deleted successfully.");
+    } catch (error: any) {
+      setError(error.message);
     }
   };
 
   return (
-    <div className="max-w-lg mx-auto p-6 bg-white shadow-lg rounded-md">
-      <h1 className="text-3xl font-bold text-center text-blue-600">Task Manager</h1>
+    <div className="p-6 space-y-4 bg-gray-100">
+      <h1 className="text-2xl font-bold">Task Manager</h1>
 
-      {error && (
-        <div className="flex items-center p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 5.636L5.636 18.364M18.364 18.364L5.636 5.636"></path>
-          </svg>
-          {error}
-        </div>
-      )}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && <p className="text-red-500">{error}</p>}
+        {success && <p className="text-green-500">{success}</p>}
 
-      {success && (
-        <div className="flex items-center p-4 mb-4 text-sm text-green-700 bg-green-100 rounded-lg">
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-          </svg>
-          {success}
-        </div>
-      )}
+        <input
+          type="text"
+          name="title"
+          value={taskData.title}
+          onChange={handleInputChange}
+          placeholder="Task Title"
+          className="w-full px-4 py-2 border rounded"
+          required
+        />
 
-      <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-        <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-            Title
-          </label>
-          <input
-            id="title"
-            type="text"
-            name="title"
-            value={taskData.title}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-            Description
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            value={taskData.description}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-          ></textarea>
-        </div>
-        <div>
-          <label htmlFor="priority" className="block text-sm font-medium text-gray-700">
-            Priority
-          </label>
-          <select
-            id="priority"
-            name="priority"
-            value={taskData.priority}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-          >
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
-          </select>
-        </div>
-        <div>
-          <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-            Status
-          </label>
-          <select
-            id="status"
-            name="status"
-            value={taskData.status}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-          >
-            <option value="Completed">Completed</option>
-            <option value="Pending">Pending</option>
-          </select>
-        </div>
+        <textarea
+          name="description"
+          value={taskData.description}
+          onChange={handleInputChange}
+          placeholder="Task Description"
+          className="w-full px-4 py-2 border rounded"
+          required
+        />
+
+        <select
+          name="priority"
+          value={taskData.priority}
+          onChange={handleInputChange}
+          className="w-full px-4 py-2 border rounded"
+        >
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+
+        <select
+          name="status"
+          value={taskData.status}
+          onChange={handleInputChange}
+          className="w-full px-4 py-2 border rounded"
+        >
+          <option value="Pending">Pending</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Completed">Completed</option>
+        </select>
+
         <button
           type="submit"
-          className="w-full px-4 py-2 text-white bg-gradient-to-r from-blue-500 to-indigo-500 rounded shadow-md hover:from-blue-600 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          className="w-full px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
         >
-          Create Task
+          {isEditing ? "Update Task" : "Create Task"}
         </button>
-        <button
-          type="button"
-          onClick={() => setTaskData({ title: "", description: "", priority: "Medium", status: "Pending" })}
-          className="w-full px-4 py-2 mt-2 text-blue-500 border border-blue-500 rounded hover:bg-blue-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-300"
-        >
-          Reset Form
-        </button>
+
+        {isEditing && (
+          <button
+            type="button"
+            onClick={() => {
+              setEditingTask(null);
+              setTaskData({ title: "", description: "", priority: "Medium", status: "Pending" });
+            }}
+            className="w-full px-4 py-2 mt-2 text-red-500 border border-red-500 rounded hover:bg-red-500 hover:text-white"
+          >
+            Cancel Edit
+          </button>
+        )}
       </form>
+      <div className="space-y-4">
+          {tasks.length > 0 ? (
+            tasks.map((task) => (
+              <div key={task.id} className="p-4 border rounded space-y-2">
+                <h3 className="text-lg font-bold">{task.title}</h3>
+                <p>{task.description}</p>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleEdit(task)}
+                    className="px-4 py-2 text-blue-500 border border-blue-500 rounded hover:bg-blue-500 hover:text-white"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(task.id)}
+                    className="px-4 py-2 text-red-500 border border-red-500 rounded hover:bg-red-500 hover:text-white"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p>No tasks available. Add a task to get started!</p>
+          )}
+        </div>
     </div>
   );
 };
