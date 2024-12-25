@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 
 interface Task {
-  id: number;
+  _id: number;
   title: string;
   description: string;
   priority: "High" | "Medium" | "Low";
@@ -64,16 +64,20 @@ const TaskManager = () => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
-
+  
     try {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No token found. Please log in again.");
-
+  
+      if (isEditing && (!editingTask || !editingTask._id)) {
+        setError("Editing task ID is missing.");
+        return;
+      }
+  
       const url = isEditing
-        ? `http://127.0.0.1:5000/api/tasks/${editingTask.id}`
+        ? `http://127.0.0.1:5000/api/tasks/${editingTask?._id}`
         : "http://127.0.0.1:5000/api/tasks";
       const method = isEditing ? "PUT" : "POST";
-
       const response = await fetch(url, {
         method,
         headers: {
@@ -90,10 +94,9 @@ const TaskManager = () => {
 
       const result = await response.json();
       setSuccess(isEditing ? "Task updated successfully!" : "Task created successfully!");
-
-      // Update tasks list
+  
       if (isEditing) {
-        setTasks((prev) => prev.map((t) => (t.id === editingTask.id ? result : t)));
+        setTasks((prev) => prev.map((t) => (t._id === editingTask._id ? result : t)));
       } else {
         setTasks((prev) => [...prev, result]);
       }
@@ -127,7 +130,7 @@ const TaskManager = () => {
 
       if (!response.ok) throw new Error("Failed to delete task.");
 
-      setTasks((prev) => prev.filter((task) => task.id !== taskId));
+      setTasks((prev) => prev.filter((task) => task._id !== taskId));
       setSuccess("Task deleted successfully.");
     } catch (error: any) {
       setError(error.message);
@@ -218,7 +221,7 @@ const TaskManager = () => {
       <div className="space-y-4">
         {currentTasks.length > 0 ? (
           currentTasks.map((task) => (
-            <div key={task.id} className="p-4 border rounded space-y-2">
+            <div key={task._id} className="p-4 border rounded space-y-2">
               <h3 className="text-lg font-bold">{task.title}</h3>
               <p>{task.description}</p>
               <div className="flex space-x-2">
@@ -229,7 +232,7 @@ const TaskManager = () => {
                   Edit
                 </button>
                 <button
-                  onClick={() => handleDelete(task.id)}
+                  onClick={() => handleDelete(task._id)}
                   className="px-4 py-2 text-red-500 border border-red-500 rounded hover:bg-red-500 hover:text-white"
                 >
                   Delete
