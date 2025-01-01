@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { loginUser } from "../../../services/auth";
+import Link from "next/link";
 
 const Login: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -25,7 +26,7 @@ const Login: React.FC = () => {
         const response = await loginUser(values.email, values.password);
         console.log("Login successful:", response);
         localStorage.setItem("token", response.token);
-        window.location.href = "/dashboard";
+        window.location.href = "/tasks";
       } catch (error: any) {
         setErrorMessage(error.response?.data?.message || "Login failed");
       } finally {
@@ -102,6 +103,17 @@ const Login: React.FC = () => {
             {isSubmitting ? "Logging in..." : "Login"}
           </button>
         </form>
+        <div className="text-center mt-4">
+          <p className="text-sm text-gray-600">
+            Don&apos;t have an account?{" "}
+            <Link
+              href="auth\register"
+              className="text-blue-500 hover:underline focus:ring-2 focus:ring-blue-300 focus:outline-none"
+            >
+              Register here
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

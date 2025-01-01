@@ -1,9 +1,11 @@
-import HeroSection from "@/componenets/HeroSection";
+import Login from "@/componenets/login";
 
-export default function Home() {
+const Home=()=>{
   return (
-    <div>
-      <HeroSection />
+    <div >
+      <Login />
     </div>
   );
 }
+
+export default Home;

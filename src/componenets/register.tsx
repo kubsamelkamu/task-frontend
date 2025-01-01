@@ -24,7 +24,6 @@ const Register: React.FC = () => {
         const response = await registerUser(values.name, values.email, values.password);
         console.log("Registration successful:", response);
         window.location.href = "/auth/login"; 
-        alert(response);
       } catch (error: any) {
         setErrorMessage(error.response?.data?.message || "Registration failed");
       }
